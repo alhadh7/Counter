@@ -1,17 +1,35 @@
 from flask import Flask, request, jsonify, render_template
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-
+import os,json
 app = Flask(__name__)
 
-# Google Sheets config
-SERVICE_ACCOUNT_FILE = "auth.json"  # path to your service account file
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+# # Google Sheets config
+# SERVICE_ACCOUNT_FILE = "auth.json"  # path to your service account file
+# SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-creds = service_account.Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE, scopes=SCOPES
-)
+# creds = service_account.Credentials.from_service_account_file(
+#     SERVICE_ACCOUNT_FILE, scopes=SCOPES
+# )
+# service = build("sheets", "v4", credentials=creds)
+
+
+# Load credentials from environment variable
+creds_json = os.environ.get("GOOGLE_CREDENTIALS")
+if not creds_json:
+    raise RuntimeError("Missing GOOGLE_CREDENTIALS env var")
+
+creds_dict = json.loads(creds_json)
+
+# Fix the private key formatting if it has escaped \n
+if "\\n" in creds_dict["private_key"]:
+    creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+
+creds = service_account.Credentials.from_service_account_info(creds_dict)
+
+# Build Sheets API client
 service = build("sheets", "v4", credentials=creds)
+
 
 # Your sheet
 SHEET_ID = "10GYUWOq36W3XS3ySW1PcPwuvI6t-j47bu9jW7eJ8isQ"
